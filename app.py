@@ -156,18 +156,22 @@ BASE = """
 </nav>
 
 {% if session.user_id %}
-<div class="sidebar-overlay" id="overlay"></div>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-section">Main</div>
-  <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+  <a href="{{ url_for('dashboard') }}"> Dashboard</a>
+
+  {% if session.role == 'admin' %}
   <div class="sidebar-section">People</div>
   <a href="{{ url_for('users') }}">👥 Users</a>
-  <a href="{{ url_for('students') }}">🎓 Students</a>
-  <a href="{{ url_for('lecturers') }}">👨‍🏫 Lecturers</a>
+  <a href="{{ url_for('students') }}"> Students</a>
+  <a href="{{ url_for('lecturers') }}"> Lecturers</a>
+  {% endif %}
+
   <div class="sidebar-section">Academic</div>
-  <a href="{{ url_for('courses') }}">📚 Courses</a>
-  <a href="{{ url_for('faculties') }}">🏛️ Faculties</a>
-  <a href="{{ url_for('departments') }}">🏢 Departments</a>
+  <a href="{{ url_for('courses') }}"> Courses</a>
+  <a href="{{ url_for('faculties') }}"> Faculties</a>
+  <a href="{{ url_for('departments') }}"> Departments</a>
+
   <hr class="sidebar-divider">
   <a href="{{ url_for('logout') }}" class="logout-link">🚪 Logout</a>
 </div>
@@ -234,9 +238,9 @@ def setup():
         ).decode('utf-8')
         try:
             conn, cur = db()
-            cur.execute("""INSERT INTO user(user_name,full_name,cell,email,address,password)
+            cur.execute("""INSERT INTO user(user_name,full_name,cell,email,address,password, role)
                            VALUES(%s,%s,%s,%s,%s,%s)""",
-                        (f["user_name"], f["full_name"], f["cell"], f["email"], f["address"], pw))
+                        (f["user_name"], f["full_name"], f["cell"], f["email"], f["address"], pw, f.get("role","user")))
             conn.commit()
             cur.close()
             conn.close()
@@ -329,6 +333,7 @@ def login():
                 session["user_id"]   = user["id"]
                 session["user_name"] = user["user_name"]
                 session["full_name"] = user["full_name"]
+                session["role"]      = user["role"]
                 return redirect(url_for("dashboard"))
         except Exception:
             pass
@@ -338,6 +343,7 @@ def login():
                 session["user_id"]   = user["id"]
                 session["user_name"] = user["user_name"]
                 session["full_name"] = user["full_name"]
+                session["role"]      = user["role"]
                 return redirect(url_for("dashboard"))
         except Exception:
             pass
@@ -378,6 +384,18 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
+def admin_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("user_id"):
+            return redirect(url_for("login"))
+        if session.get("role") != "admin":
+            flash("Access denied. Admins only.", "error")
+            return redirect(url_for("dashboard"))
+        return f(*args, **kwargs)
+    return decorated
+
 # ── DASHBOARD ───────────────────────────────────────────────
 @app.route("/dashboard")
 @login_required
@@ -412,7 +430,7 @@ def dashboard():
 
 # ── USERS ────────────────────────────────────────────────────
 @app.route("/users")
-@login_required
+@admin_required
 def users():
     conn, cur = db()
     cur.execute("SELECT id,user_name,full_name,email,cell FROM user ORDER BY id")
@@ -441,15 +459,15 @@ def users():
     """, _title="Users", rows=rows)
 
 @app.route("/users/add", methods=["GET","POST"])
-@login_required
+@admin_required
 def add_user():
     if request.method == "POST":
         f = request.form
         pw = generate_password_hash(f["password"])
         conn, cur = db()
-        cur.execute("""INSERT INTO user(user_name,full_name,cell,email,address,password)
+        cur.execute("""INSERT INTO user(user_name,full_name,cell,email,address,password, role)
                        VALUES(%s,%s,%s,%s,%s,%s)""",
-                    (f["user_name"],f["full_name"],f["cell"],f["email"],f["address"],pw))
+                    (f["user_name"],f["full_name"],f["cell"],f["email"],f["address"],pw, f.get("role","user")))
         conn.commit()
         flash("User created successfully", "success")
         return redirect(url_for("users"))
@@ -464,15 +482,20 @@ def add_user():
           <div><label>Cell</label><input name="cell"></div>
         </div>
         <label>Address</label><textarea name="address" rows="2"></textarea>
-        <label>Password</label><input name="password" type="password" required>
-        <button class="btn btn-gold">Create User</button>
+       <label>Password</label><input name="password" type="password" required>
+<label>Role</label>
+<select name="role">
+  <option value="user">User</option>
+  <option value="admin">Admin</option>
+</select>
+<button class="btn btn-gold">Create User</button>
         <a href="{{ url_for('users') }}" class="btn btn-primary" style="margin-left:.5rem">Cancel</a>
       </form>
     </div>
     """, _title="Add User")
 
 @app.route("/users/edit/<int:uid>", methods=["GET","POST"])
-@login_required
+@admin_required
 def edit_user(uid):
     conn, cur = db()
     if request.method == "POST":
@@ -503,7 +526,7 @@ def edit_user(uid):
     """, _title="Edit User", u=u)
 
 @app.route("/users/delete/<int:uid>")
-@login_required
+@admin_required
 def delete_user(uid):
     conn, cur = db()
     cur.execute("DELETE FROM user WHERE id=%s", (uid,))
@@ -513,7 +536,7 @@ def delete_user(uid):
 
 # ── STUDENTS ─────────────────────────────────────────────────
 @app.route("/students")
-@login_required
+@admin_required
 def students():
     conn, cur = db()
     cur.execute("""
@@ -539,7 +562,7 @@ def students():
     """, _title="Students", rows=rows)
 
 @app.route("/students/add", methods=["GET","POST"])
-@login_required
+@admin_required
 def add_student():
     conn, cur = db()
     if request.method == "POST":
@@ -572,7 +595,7 @@ def add_student():
 
 # ── LECTURERS ────────────────────────────────────────────────
 @app.route("/lecturers")
-@login_required
+@admin_required
 def lecturers():
     conn, cur = db()
     cur.execute("""
@@ -598,7 +621,7 @@ def lecturers():
     """, _title="Lecturers", rows=rows)
 
 @app.route("/lecturers/add", methods=["GET","POST"])
-@login_required
+@admin_required
 def add_lecturer():
     conn, cur = db()
     if request.method == "POST":
@@ -665,7 +688,7 @@ def courses():
     """, _title="Courses", rows=rows)
 
 @app.route("/courses/add", methods=["GET","POST"])
-@login_required
+@admin_required
 def add_course():
     conn, cur = db()
     if request.method == "POST":
@@ -712,7 +735,7 @@ def faculties():
     """, _title="Faculties", rows=rows)
 
 @app.route("/faculties/add", methods=["GET","POST"])
-@login_required
+@admin_required
 def add_faculty():
     if request.method == "POST":
         f = request.form
@@ -753,7 +776,7 @@ def departments():
     """, _title="Departments", rows=rows)
 
 @app.route("/departments/add", methods=["GET","POST"])
-@login_required
+@admin_required
 def add_dept():
     if request.method == "POST":
         f = request.form
