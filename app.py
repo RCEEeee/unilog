@@ -23,7 +23,7 @@ app.config["MYSQL_HOST"]     = os.environ.get("DB_HOST",     "trolley.proxy.rlwy
 app.config["MYSQL_USER"]     = os.environ.get("DB_USER",     "root")
 app.config["MYSQL_PASSWORD"] = os.environ.get("DB_PASSWORD", "cWEpkkSyeNiuZhtfCINETdRilCrSLdXc")
 app.config["MYSQL_DB"]       = os.environ.get("DB_NAME",     "railway")
-app.config["MYSQL_PORT"]       = os.environ.get("DB_PORT",     "3306")
+app.config["MYSQL_PORT"]       = int(os.environ.get("DB_PORT",     "3306"))
 app.config["MYSQL_CURSORCLASS"] = "DictCursor"
 
 mysql = MySQL(app)
