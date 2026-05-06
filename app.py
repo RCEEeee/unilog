@@ -116,8 +116,8 @@ def db():
     cur = conn.cursor()
     # ... your queries ...
     conn.commit()
-    cur.close()
-    conn.close()
+    # cur.close()  <-- Warning: See note below
+    # conn.close() <-- Warning: See note below
     return cur
 
 # ── AUTH ────────────────────────────────────────────────────
