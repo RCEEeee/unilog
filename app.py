@@ -61,9 +61,9 @@ BASE = """
   nav a{color:#fff;text-decoration:none;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;opacity:.75;transition:.2s}
   nav a:hover,nav a.active{opacity:1;color:var(--gold)}
 
-  /* ── HAMBURGER BUTTON ── */
+ /* ── HAMBURGER BUTTON ── */
   .nav-toggle{
-    display:none;
+    display:flex;
     background:none;border:none;cursor:pointer;
     flex-direction:column;justify-content:center;gap:5px;
     padding:.4rem;margin-right:.5rem;
@@ -160,17 +160,14 @@ BASE = """
 <div class="sidebar" id="sidebar">
   <div class="sidebar-section">Main</div>
   <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
-
   <div class="sidebar-section">People</div>
   <a href="{{ url_for('users') }}">👥 Users</a>
   <a href="{{ url_for('students') }}">🎓 Students</a>
   <a href="{{ url_for('lecturers') }}">👨‍🏫 Lecturers</a>
-
   <div class="sidebar-section">Academic</div>
   <a href="{{ url_for('courses') }}">📚 Courses</a>
   <a href="{{ url_for('faculties') }}">🏛️ Faculties</a>
   <a href="{{ url_for('departments') }}">🏢 Departments</a>
-
   <hr class="sidebar-divider">
   <a href="{{ url_for('logout') }}" class="logout-link">🚪 Logout</a>
 </div>
