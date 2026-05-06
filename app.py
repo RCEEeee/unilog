@@ -561,11 +561,3 @@ if __name__ == "__main__":
     app.run(host='0.0.0.0', port=port, debug=False)
 import pymysql
 pymysql.install_as_MySQLdb()
-
-import pymysql.cursors
-
-# In your get_db() or connection setup:
-conn = pymysql.connect(
-    # ... your other settings ...
-    cursorclass=pymysql.cursors.DictCursor
-)
