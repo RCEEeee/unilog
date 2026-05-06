@@ -45,11 +45,61 @@ BASE = """
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
-  nav{background:var(--ink);padding:0 2rem;display:flex;align-items:center;gap:2rem;height:56px}
+
+  /* ── NAVBAR ── */
+  nav{background:var(--ink);padding:0 2rem;display:flex;align-items:center;gap:1rem;height:56px;position:relative}
+  nav .brand{font-family:'Playfair Display',serif;color:var(--gold);font-size:1.25rem;margin-right:.5rem}
   nav a{color:#fff;text-decoration:none;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;opacity:.75;transition:.2s}
   nav a:hover,nav a.active{opacity:1;color:var(--gold)}
-  nav .brand{font-family:'Playfair Display',serif;color:var(--gold);font-size:1.25rem;margin-right:auto}
-  .container{max-width:1100px;margin:0 auto;padding:2.5rem 1.5rem}
+
+  /* ── HAMBURGER BUTTON ── */
+  .nav-toggle{
+    display:none;
+    background:none;border:none;cursor:pointer;
+    flex-direction:column;justify-content:center;gap:5px;
+    padding:.4rem;margin-right:.5rem;
+  }
+  .nav-toggle span{
+    display:block;width:22px;height:2px;background:var(--gold);
+    border-radius:2px;transition:.3s;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar{
+    position:fixed;top:56px;left:-260px;width:260px;
+    height:calc(100vh - 56px);background:var(--ink);
+    padding:1.5rem 1rem;display:flex;flex-direction:column;gap:.25rem;
+    transition:left .3s ease;z-index:999;box-shadow:4px 0 20px rgba(0,0,0,.3);
+    overflow-y:auto;
+  }
+  .sidebar.open{left:0}
+  .sidebar a{
+    color:#fff;text-decoration:none;font-size:.9rem;
+    padding:.65rem 1rem;border-radius:4px;
+    display:flex;align-items:center;gap:.75rem;
+    opacity:.75;transition:.2s;letter-spacing:.03em;
+  }
+  .sidebar a:hover{opacity:1;background:rgba(201,168,76,.15);color:var(--gold)}
+  .sidebar a.active{opacity:1;background:rgba(201,168,76,.2);color:var(--gold)}
+  .sidebar-section{
+    font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);padding:.75rem 1rem .25rem;margin-top:.5rem;
+  }
+  .sidebar-divider{border:none;border-top:1px solid #2a2a2a;margin:.5rem 0}
+  .sidebar .logout-link{color:var(--rust)!important;margin-top:auto}
+  .sidebar .logout-link:hover{background:rgba(179,74,47,.15)!important;color:#e05a3a!important}
+
+  /* ── OVERLAY ── */
+  .sidebar-overlay{
+    display:none;position:fixed;inset:0;top:56px;
+    background:rgba(0,0,0,.4);z-index:998;
+  }
+  .sidebar-overlay.open{display:block}
+
+  /* ── MAIN CONTENT ── */
+  .container{max-width:1100px;margin:0 auto;padding:2.5rem 1.5rem;transition:margin-left .3s}
+
+  /* ── REST OF STYLES ── */
   h1{font-family:'Playfair Display',serif;font-size:2rem;margin-bottom:1.5rem}
   h2{font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:1rem}
   .card{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1.75rem;margin-bottom:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.04)}
@@ -81,19 +131,42 @@ BASE = """
 </style>
 </head>
 <body>
+
 <nav>
+  {% if session.user_id %}
+  <button class="nav-toggle" id="navToggle" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  {% endif %}
   <span class="brand">University_Of_O</span>
   {% if session.user_id %}
-    <a href="{{ url_for('dashboard') }}">Dashboard</a>
-    <a href="{{ url_for('users') }}">Users</a>
-    <a href="{{ url_for('students') }}">Students</a>
-    <a href="{{ url_for('lecturers') }}">Lecturers</a>
-    <a href="{{ url_for('courses') }}">Courses</a>
-    <a href="{{ url_for('faculties') }}">Faculties</a>
-    <a href="{{ url_for('departments') }}">Departments</a>
-    <a href="{{ url_for('logout') }}" style="margin-left:auto;color:var(--rust);opacity:1">Logout</a>
+    <span style="color:var(--muted);font-size:.82rem;margin-left:auto">
+      👤 {{ session.full_name }}
+    </span>
   {% endif %}
 </nav>
+
+{% if session.user_id %}
+<div class="sidebar-overlay" id="overlay"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-section">Main</div>
+  <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+
+  <div class="sidebar-section">People</div>
+  <a href="{{ url_for('users') }}">👥 Users</a>
+  <a href="{{ url_for('students') }}">🎓 Students</a>
+  <a href="{{ url_for('lecturers') }}">👨‍🏫 Lecturers</a>
+
+  <div class="sidebar-section">Academic</div>
+  <a href="{{ url_for('courses') }}">📚 Courses</a>
+  <a href="{{ url_for('faculties') }}">🏛️ Faculties</a>
+  <a href="{{ url_for('departments') }}">🏢 Departments</a>
+
+  <hr class="sidebar-divider">
+  <a href="{{ url_for('logout') }}" class="logout-link">🚪 Logout</a>
+</div>
+{% endif %}
+
 <div class="container">
   {% with msgs = get_flashed_messages(with_categories=true) %}
     {% for cat,msg in msgs %}
@@ -102,6 +175,23 @@ BASE = """
   {% endwith %}
   {% block content %}{% endblock %}
 </div>
+
+<script>
+  const toggle = document.getElementById('navToggle');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('open');
+    });
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('open');
+    });
+  }
+</script>
+
 </body>
 </html>
 """
@@ -122,31 +212,56 @@ def setup():
     if request.method == "POST":
         f = request.form
         pw = generate_password_hash(f["password"])
-        conn, cur = db()
-        cur.execute("""INSERT INTO user(user_name,full_name,cell,email,address,password)
-                       VALUES(%s,%s,%s,%s,%s,%s)""",
-                    (f["user_name"], f["full_name"], f["cell"], f["email"], f["address"], pw))
-        conn.commit()
-        flash("User created successfully", "success")
-        return redirect(url_for("login"))
-    return render("""
-    <div style="max-width:480px;margin:4rem auto">
-      <div class="card">
-        <h2 style="text-align:center;margin-bottom:.5rem">Create User</h2>
+        try:
+            conn, cur = db()
+            cur.execute("""INSERT INTO user(user_name,full_name,cell,email,address,password)
+                           VALUES(%s,%s,%s,%s,%s,%s)""",
+                        (f["user_name"], f["full_name"], f["cell"], f["email"], f["address"], pw))
+            conn.commit()
+            flash("Admin created! Please sign in.", "success")
+            return redirect(url_for("login"))
+        except Exception as e:
+            return f"<h2>Error: {e}</h2>"
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Setup</title>
+        <style>
+            body{font-family:sans-serif;background:#f5f0e8;display:flex;justify-content:center;padding:4rem 1rem}
+            .card{background:#fff;padding:2rem;border-radius:8px;width:100%;max-width:460px;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+            h2{margin-bottom:1.5rem;text-align:center}
+            label{display:block;font-size:.85rem;margin-bottom:.3rem;color:#555}
+            input{width:100%;padding:.55rem .85rem;margin-bottom:1rem;border:1px solid #ddd;border-radius:4px;font-size:.9rem;box-sizing:border-box}
+            button{width:100%;padding:.7rem;background:#c9a84c;color:#fff;border:none;border-radius:4px;font-size:1rem;cursor:pointer}
+            button:hover{background:#b8923e}
+            p{text-align:center;margin-top:1rem;font-size:.85rem}
+            a{color:#c9a84c}
+        </style>
+    </head>
+    <body>
+    <div class="card">
+        <h2>Create Admin Account</h2>
         <form method="POST">
-          <div class="grid-2">
-            <div><label>Username</label><input name="user_name" required></div>
-            <div><label>Full Name</label><input name="full_name" required></div>
-            <div><label>Email</label><input name="email" type="email" required></div>
-            <div><label>Cell</label><input name="cell"></div>
-          </div>
-          <label>Address</label><textarea name="address" rows="2"></textarea>
-          <label>Password</label><input name="password" type="password" required>
-          <button class="btn btn-gold" style="width:100%">Create User</button>
+            <label>Username</label>
+            <input name="user_name" required>
+            <label>Full Name</label>
+            <input name="full_name" required>
+            <label>Email</label>
+            <input name="email" type="email" required>
+            <label>Cell</label>
+            <input name="cell">
+            <label>Address</label>
+            <input name="address">
+            <label>Password</label>
+            <input name="password" type="password" required>
+            <button type="submit">Create Admin</button>
         </form>
-      </div>
+        <p>Already have an account? <a href="/">Sign In</a></p>
     </div>
-    """, _title="Setup")
+    </body>
+    </html>
+    """
 # ── AUTH ────────────────────────────────────────────────────
 @app.route("/", methods=["GET","POST"])
 def login():
