@@ -10,39 +10,8 @@ Set environment variables (or edit DEFAULT_CONFIG below):
 """
 import bcrypt
 import pymysql
-
-# Update with your Railway DB credentials
-connection = pymysql.connect(
-    host="mysql.railway.internal",
-    user="root",
-    password="cWEpkkSyeNiuZhtfCINETdRilCrSLdXc",
-    database="railway"
-)
-
-try:
-    with connection.cursor() as cursor:
-        # Fetch all users
-        cursor.execute("SELECT id, password FROM user")
-        users = cursor.fetchall()
-
-        for user in users:
-            user_id, pwd = user
-
-            # Skip if already bcrypt hashed
-            if pwd and not pwd.startswith("$2b$"):
-                hashed = bcrypt.hashpw(pwd.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-                cursor.execute("UPDATE user SET password=%s WHERE id=%s", (hashed, user_id))
-                print(f"Updated user {user_id}")
-
-        connection.commit()
-finally:
-    connection.close()
-
-import pymysql
 pymysql.install_as_MySQLdb()
-
 import os
-import pymysql
 from flask import (Flask, render_template_string, request,
                    redirect, url_for, flash, session, g)
 from werkzeug.security import generate_password_hash, check_password_hash
