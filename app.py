@@ -112,7 +112,12 @@ def render(template_str, **ctx):
     return render_template_string(full, **ctx)
 
 def db():
-    cur = mysql.connection.cursor()
+    conn = get_db()
+cur = conn.cursor()
+# ... your queries ...
+conn.commit()
+cur.close()
+conn.close()
     return cur
 
 # ── AUTH ────────────────────────────────────────────────────
