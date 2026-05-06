@@ -215,19 +215,36 @@ def db():
 
 @app.route("/setup", methods=["GET", "POST"])
 def setup():
+    try:
+        conn, cur = db()
+        cur.execute("SELECT COUNT(*) AS n FROM user")
+        count = cur.fetchone()["n"]
+        cur.close()
+        conn.close()
+        if count > 0:
+            return redirect(url_for("login"))
+    except Exception as e:
+        return f"<h2>DB Error: {e}</h2>"
+
     if request.method == "POST":
         f = request.form
-        pw = generate_password_hash(f["password"])
+        pw = bcrypt.hashpw(
+            f["password"].encode('utf-8'), 
+            bcrypt.gensalt()
+        ).decode('utf-8')
         try:
             conn, cur = db()
             cur.execute("""INSERT INTO user(user_name,full_name,cell,email,address,password)
                            VALUES(%s,%s,%s,%s,%s,%s)""",
                         (f["user_name"], f["full_name"], f["cell"], f["email"], f["address"], pw))
             conn.commit()
+            cur.close()
+            conn.close()
             flash("Admin created! Please sign in.", "success")
             return redirect(url_for("login"))
         except Exception as e:
-            return f"<h2>Error: {e}</h2>"
+            return f"<h2>Error creating user: {e}</h2>"
+
     return """
     <!DOCTYPE html>
     <html>
@@ -276,10 +293,22 @@ def db():
 
 @app.route("/", methods=["GET", "POST"])
 def login():
+    # Check if setup is needed
+    show_setup = False
+    try:
+        conn, cur = db()
+        cur.execute("SELECT COUNT(*) AS n FROM user")
+        count = cur.fetchone()["n"]
+        cur.close()
+        conn.close()
+        if count == 0:
+            show_setup = True
+    except:
+        pass
+
     if request.method == "POST":
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "").strip()
-        
         try:
             conn, cur = db()
             cur.execute("SELECT * FROM user WHERE email=%s", (email,))
@@ -288,16 +317,14 @@ def login():
             conn.close()
         except Exception as e:
             return f"<h2>DB Error: {e}</h2>"
-        
+
         if not user:
             flash("No account found with that email", "error")
             return redirect(url_for("login"))
-        
+
         stored_password = user["password"]
-        
-        # Try bcrypt first
+
         try:
-            import bcrypt
             if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
                 session["user_id"]   = user["id"]
                 session["user_name"] = user["user_name"]
@@ -305,8 +332,7 @@ def login():
                 return redirect(url_for("dashboard"))
         except Exception:
             pass
-        
-        # Try werkzeug check
+
         try:
             if check_password_hash(stored_password, password):
                 session["user_id"]   = user["id"]
@@ -315,9 +341,9 @@ def login():
                 return redirect(url_for("dashboard"))
         except Exception:
             pass
-        
+
         flash("Invalid credentials", "error")
-    
+
     return render("""
     <div style="max-width:400px;margin:4rem auto">
       <div class="card">
@@ -329,12 +355,14 @@ def login():
           <input name="password" type="password" required>
           <button class="btn btn-primary" style="width:100%">Sign In</button>
         </form>
+        {% if show_setup %}
         <p style="text-align:center;margin-top:1rem;font-size:.85rem">
           No account? <a href="/setup" style="color:var(--gold)">Create Admin</a>
         </p>
+        {% endif %}
       </div>
     </div>
-    """, _title="Login")
+    """, _title="Login", show_setup=show_setup)
     
 @app.route("/logout")
 def logout():
