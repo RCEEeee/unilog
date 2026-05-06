@@ -21,14 +21,23 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
 
 def get_db():
+    # Fetch values from environment
+    db_host = os.environ.get('MYSQL_HOST', 'mysql.railway.internal')
+    db_user = os.environ.get('MYSQL_USER')
+    db_pass = os.environ.get('MYSQL_PASSWORD')
+    db_name = os.environ.get('MYSQL_DB')
+    db_port = int(os.environ.get('MYSQL_PORT', 3306))
+
+    # This will now use the password provided by the environment
     return pymysql.connect(
-        host=os.environ.get('MYSQL_HOST', 'mysql.railway.internal'),
-        user=os.environ.get('MYSQL_USER'),
-        password=os.environ.get('MYSQL_PASSWORD'),
-        database=os.environ.get('MYSQL_DB'),
-        port=int(os.environ.get('MYSQL_PORT', 3306)),
+        host=db_host,
+        user=db_user,
+        password=db_pass, # Ensure this is getting a real string!
+        database=db_name,
+        port=db_port,
         cursorclass=pymysql.cursors.DictCursor
     )
+        
 # ── BASE HTML TEMPLATE ──────────────────────────────────────
 BASE = """
 <!DOCTYPE html>
