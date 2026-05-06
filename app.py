@@ -25,6 +25,7 @@ def get_db():
         password=os.environ.get('MYSQLPASSWORD'),
         database=os.environ.get('MYSQLDATABASE'),
         port=int(os.environ.get('MYSQLPORT', 3306))
+        cursorclass=pymysql.cursors.DictCursor
     )
 # ── BASE HTML TEMPLATE ──────────────────────────────────────
 BASE = """
