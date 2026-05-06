@@ -113,11 +113,11 @@ def render(template_str, **ctx):
 
 def db():
     conn = get_db()
-cur = conn.cursor()
-# ... your queries ...
-conn.commit()
-cur.close()
-conn.close()
+    cur = conn.cursor()
+    # ... your queries ...
+    conn.commit()
+    cur.close()
+    conn.close()
     return cur
 
 # ── AUTH ────────────────────────────────────────────────────
