@@ -20,7 +20,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
 
 def get_db():
     return pymysql.connect(
-        host=os.environ.get('MYSQL_HOST'),
+        host=os.environ.get('MYSQL_HOST', 'mysql.railway.internal'),
         user=os.environ.get('MYSQL_USER'),
         password=os.environ.get('MYSQL_PASSWORD'),
         database=os.environ.get('MYSQL_DB'),
