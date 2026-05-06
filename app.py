@@ -8,6 +8,9 @@ Run:
 Set environment variables (or edit DEFAULT_CONFIG below):
     DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, SECRET_KEY
 """
+import pymysql
+pymysql.install_as_MySQLdb()
+
 import os
 import pymysql
 from flask import (Flask, render_template_string, request,
@@ -554,5 +557,4 @@ def add_dept():
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-import pymysql
-pymysql.install_as_MySQLdb()
+
