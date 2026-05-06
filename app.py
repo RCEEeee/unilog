@@ -19,7 +19,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
 
-app.config["MYSQL_HOST"]     = os.environ.get("DB_HOST",     "trolley.proxy.rlwy.net")
+app.config["MYSQL_HOST"]     = os.environ.get("DB_HOST",     "mysql.railway.internal")
 app.config["MYSQL_USER"]     = os.environ.get("DB_USER",     "root")
 app.config["MYSQL_PASSWORD"] = os.environ.get("DB_PASSWORD", "cWEpkkSyeNiuZhtfCINETdRilCrSLdXc")
 app.config["MYSQL_DB"]       = os.environ.get("DB_NAME",     "railway")
