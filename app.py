@@ -8,26 +8,25 @@ Run:
 Set environment variables (or edit DEFAULT_CONFIG below):
     DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, SECRET_KEY
 """
-
 import os
+import pymysql
 from flask import (Flask, render_template_string, request,
                    redirect, url_for, flash, session, g)
-from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# ── App & config ────────────────────────────────────────────
+# — App & config —
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
 
-app.config['MYSQL_HOST']     = os.environ.get('MYSQL_HOST')
-app.config['MYSQL_USER']     = os.environ.get('MYSQL_USER')
-app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD')
-app.config['MYSQL_DB']       = os.environ.get('MYSQL_DB')
-app.config['MYSQL_PORT']     = int(os.environ.get('MYSQL_PORT', 3306))
-
-app.config["MYSQL_CURSORCLASS"] = "DictCursor"
-
-mysql = MySQL(app)
+def get_db():
+    return pymysql.connect(
+        host=os.environ.get('MYSQL_HOST'),
+        user=os.environ.get('MYSQL_USER'),
+        password=os.environ.get('MYSQL_PASSWORD'),
+        database=os.environ.get('MYSQL_DB'),
+        port=int(os.environ.get('MYSQL_PORT', 3306)),
+        cursorclass=pymysql.cursors.DictCursor
+    )
 
 # ── BASE HTML TEMPLATE ──────────────────────────────────────
 BASE = """
