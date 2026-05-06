@@ -272,31 +272,73 @@ def setup():
     </html>
     """
 # ── AUTH ────────────────────────────────────────────────────
-@app.route("/", methods=["GET","POST"])
+def db():
+    conn = get_db()
+    cur = conn.cursor()
+    return conn, cur
+
+@app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        conn, cur = db()
-        cur.execute("SELECT * FROM user WHERE email=%s", (request.form["email"],))
-        user = cur.fetchone()
-        if user and check_password_hash(user["password"], request.form["password"]):
-            session["user_id"]   = user["id"]
-            session["user_name"] = user["user_name"]
-            session["full_name"] = user["full_name"]
-            return redirect(url_for("dashboard"))
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
+        
+        try:
+            conn, cur = db()
+            cur.execute("SELECT * FROM user WHERE email=%s", (email,))
+            user = cur.fetchone()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            return f"<h2>DB Error: {e}</h2>"
+        
+        if not user:
+            flash("No account found with that email", "error")
+            return redirect(url_for("login"))
+        
+        stored_password = user["password"]
+        
+        # Try bcrypt first
+        try:
+            import bcrypt
+            if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
+                session["user_id"]   = user["id"]
+                session["user_name"] = user["user_name"]
+                session["full_name"] = user["full_name"]
+                return redirect(url_for("dashboard"))
+        except Exception:
+            pass
+        
+        # Try werkzeug check
+        try:
+            if check_password_hash(stored_password, password):
+                session["user_id"]   = user["id"]
+                session["user_name"] = user["user_name"]
+                session["full_name"] = user["full_name"]
+                return redirect(url_for("dashboard"))
+        except Exception:
+            pass
+        
         flash("Invalid credentials", "error")
+    
     return render("""
     <div style="max-width:400px;margin:4rem auto">
       <div class="card">
         <h2 style="text-align:center;margin-bottom:1.5rem">Sign In</h2>
         <form method="POST">
-          <label>Email</label><input name="email" type="email" required>
-          <label>Password</label><input name="password" type="password" required>
+          <label>Email</label>
+          <input name="email" type="email" required>
+          <label>Password</label>
+          <input name="password" type="password" required>
           <button class="btn btn-primary" style="width:100%">Sign In</button>
         </form>
+        <p style="text-align:center;margin-top:1rem;font-size:.85rem">
+          No account? <a href="/setup" style="color:var(--gold)">Create Admin</a>
+        </p>
       </div>
     </div>
     """, _title="Login")
-
+    
 @app.route("/logout")
 def logout():
     session.clear()
