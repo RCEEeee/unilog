@@ -113,17 +113,13 @@ def render(template_str, **ctx):
 def db():
     conn = get_db()
     cur = conn.cursor()
-    # ... your queries ...
-    conn.commit()
-    # cur.close()  <-- Warning: See note below
-    # conn.close() <-- Warning: See note below
-    return cur
+    return conn, cur
 
 # ── AUTH ────────────────────────────────────────────────────
 @app.route("/", methods=["GET","POST"])
 def login():
     if request.method == "POST":
-        cur = db()
+        conn, cur = db()
         cur.execute("SELECT * FROM user WHERE email=%s", (request.form["email"],))
         user = cur.fetchone()
         if user and check_password_hash(user["password"], request.form["password"]):
@@ -163,7 +159,7 @@ def login_required(f):
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    cur = db()
+    conn, cur = db()
     cur.execute("SELECT COUNT(*) AS n FROM user")
     u = cur.fetchone()["n"]
     cur.execute("SELECT COUNT(*) AS n FROM student")
@@ -195,7 +191,7 @@ def dashboard():
 @app.route("/users")
 @login_required
 def users():
-    cur = db()
+    conn, cur = db()
     cur.execute("SELECT id,user_name,full_name,email,cell FROM user ORDER BY id")
     rows = cur.fetchall()
     return render("""
@@ -227,11 +223,11 @@ def add_user():
     if request.method == "POST":
         f = request.form
         pw = generate_password_hash(f["password"])
-        cur = db()
+        conn, cur = db()
         cur.execute("""INSERT INTO user(user_name,full_name,cell,email,address,password)
                        VALUES(%s,%s,%s,%s,%s,%s)""",
                     (f["user_name"],f["full_name"],f["cell"],f["email"],f["address"],pw))
-        mysql.connection.commit()
+        conn.commit()
         flash("User created successfully", "success")
         return redirect(url_for("users"))
     return render("""
@@ -255,13 +251,13 @@ def add_user():
 @app.route("/users/edit/<int:uid>", methods=["GET","POST"])
 @login_required
 def edit_user(uid):
-    cur = db()
+    conn, cur = db()
     if request.method == "POST":
         f = request.form
         cur.execute("""UPDATE user SET user_name=%s,full_name=%s,cell=%s,email=%s,address=%s
                        WHERE id=%s""",
                     (f["user_name"],f["full_name"],f["cell"],f["email"],f["address"],uid))
-        mysql.connection.commit()
+        conn.commit()
         flash("User updated", "success")
         return redirect(url_for("users"))
     cur.execute("SELECT * FROM user WHERE id=%s", (uid,))
@@ -286,9 +282,9 @@ def edit_user(uid):
 @app.route("/users/delete/<int:uid>")
 @login_required
 def delete_user(uid):
-    cur = db()
+    conn, cur = db()
     cur.execute("DELETE FROM user WHERE id=%s", (uid,))
-    mysql.connection.commit()
+    conn.commit()
     flash("User deleted", "success")
     return redirect(url_for("users"))
 
@@ -296,7 +292,7 @@ def delete_user(uid):
 @app.route("/students")
 @login_required
 def students():
-    cur = db()
+    conn, cur = db()
     cur.execute("""
         SELECT s.id, u.full_name, u.email, s.reg_no, dp.deg_name
         FROM student s
@@ -322,12 +318,12 @@ def students():
 @app.route("/students/add", methods=["GET","POST"])
 @login_required
 def add_student():
-    cur = db()
+    conn, cur = db()
     if request.method == "POST":
         f = request.form
         cur.execute("INSERT INTO student(user_id,reg_no,programme_id) VALUES(%s,%s,%s)",
                     (f["user_id"], f["reg_no"], f["programme_id"]))
-        mysql.connection.commit()
+        conn.commit()
         flash("Student enrolled", "success")
         return redirect(url_for("students"))
     cur.execute("SELECT id,full_name FROM user ORDER BY full_name")
@@ -355,7 +351,7 @@ def add_student():
 @app.route("/lecturers")
 @login_required
 def lecturers():
-    cur = db()
+    conn, cur = db()
     cur.execute("""
         SELECT l.id, u.full_name, u.email, f.faculty_name
         FROM lecturer l
@@ -381,12 +377,12 @@ def lecturers():
 @app.route("/lecturers/add", methods=["GET","POST"])
 @login_required
 def add_lecturer():
-    cur = db()
+    conn, cur = db()
     if request.method == "POST":
         f = request.form
         cur.execute("INSERT INTO lecturer(user_id,faculty_id) VALUES(%s,%s)",
                     (f["user_id"], f["faculty_id"]))
-        mysql.connection.commit()
+        conn.commit()
         flash("Lecturer added", "success")
         return redirect(url_for("lecturers"))
     cur.execute("SELECT id,full_name FROM user ORDER BY full_name")
@@ -413,7 +409,7 @@ def add_lecturer():
 @app.route("/courses")
 @login_required
 def courses():
-    cur = db()
+    conn, cur = db()
     cur.execute("""
         SELECT c.id, c.course_name, c.course_desc, f.faculty_name,
                COUNT(DISTINCT e.student_id) AS enrolled,
@@ -448,12 +444,12 @@ def courses():
 @app.route("/courses/add", methods=["GET","POST"])
 @login_required
 def add_course():
-    cur = db()
+    conn, cur = db()
     if request.method == "POST":
         f = request.form
         cur.execute("INSERT INTO course(course_name,course_desc,faculty_id) VALUES(%s,%s,%s)",
                     (f["course_name"], f["course_desc"], f["faculty_id"]))
-        mysql.connection.commit()
+        conn.commit()
         flash("Course added", "success")
         return redirect(url_for("courses"))
     cur.execute("SELECT id,faculty_name FROM faculty ORDER BY faculty_name")
@@ -476,7 +472,7 @@ def add_course():
 @app.route("/faculties")
 @login_required
 def faculties():
-    cur = db()
+    conn, cur = db()
     cur.execute("SELECT * FROM faculty ORDER BY id")
     rows = cur.fetchall()
     return render("""
@@ -497,10 +493,10 @@ def faculties():
 def add_faculty():
     if request.method == "POST":
         f = request.form
-        cur = db()
+        conn, cur = db()
         cur.execute("INSERT INTO faculty(faculty_name,faculty_desc) VALUES(%s,%s)",
                     (f["faculty_name"], f["faculty_desc"]))
-        mysql.connection.commit()
+        conn.commit()
         flash("Faculty added", "success")
         return redirect(url_for("faculties"))
     return render("""
@@ -517,7 +513,7 @@ def add_faculty():
 @app.route("/departments")
 @login_required
 def departments():
-    cur = db()
+    conn, cur = db()
     cur.execute("SELECT * FROM dept ORDER BY id")
     rows = cur.fetchall()
     return render("""
@@ -538,10 +534,10 @@ def departments():
 def add_dept():
     if request.method == "POST":
         f = request.form
-        cur = db()
+        conn, cur = db()
         cur.execute("INSERT INTO dept(dept_name,dept_desc) VALUES(%s,%s)",
                     (f["dept_name"], f["dept_desc"]))
-        mysql.connection.commit()
+        conn.commit()
         flash("Department added", "success")
         return redirect(url_for("departments"))
     return render("""
