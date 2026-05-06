@@ -149,6 +149,44 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
+@app.route("/setup", methods=["GET", "POST"])
+def setup():
+    conn, cur = db()
+    cur.execute("SELECT COUNT(*) AS n FROM user")
+    count = cur.fetchone()["n"]
+    if count > 0:
+        return redirect(url_for("login"))
+    if request.method == "POST":
+        f = request.form
+        pw = generate_password_hash(f["password"])
+        cur.execute("""INSERT INTO user(user_name,full_name,cell,email,address,password)
+                       VALUES(%s,%s,%s,%s,%s,%s)""",
+                    (f["user_name"], f["full_name"], f["cell"], f["email"], f["address"], pw))
+        conn.commit()
+        flash("Admin user created — please sign in", "success")
+        return redirect(url_for("login"))
+    return render("""
+    <div style="max-width:480px;margin:4rem auto">
+      <div class="card">
+        <h2 style="text-align:center;margin-bottom:.5rem">Initial Setup</h2>
+        <p style="text-align:center;color:var(--muted);font-size:.88rem;margin-bottom:1.5rem">
+          Create the first admin account. This page is disabled once a user exists.
+        </p>
+        <form method="POST">
+          <div class="grid-2">
+            <div><label>Username</label><input name="user_name" required></div>
+            <div><label>Full Name</label><input name="full_name" required></div>
+            <div><label>Email</label><input name="email" type="email" required></div>
+            <div><label>Cell</label><input name="cell"></div>
+          </div>
+          <label>Address</label><textarea name="address" rows="2"></textarea>
+          <label>Password</label><input name="password" type="password" required>
+          <button class="btn btn-gold" style="width:100%">Create Admin User</button>
+        </form>
+      </div>
+    </div>
+    """, _title="Setup")
+
 def login_required(f):
     from functools import wraps
     @wraps(f)
