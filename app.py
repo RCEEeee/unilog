@@ -119,11 +119,11 @@ def db():
 
 @app.route("/setup", methods=["GET", "POST"])
 def setup():
-    conn, cur = db()
-    cur.execute("SELECT COUNT(*) AS n FROM user")
-    count = cur.fetchone()["n"]
-    if count > 0:
-        return redirect(url_for("login"))
+    # TEMPORARILY COMMENTED OUT:
+    # cur.execute("SELECT COUNT(*) AS n FROM user")
+    # count = cur.fetchone()["n"]
+    # if count > 0:
+    #     return redirect(url_for("login"))
     if request.method == "POST":
         f = request.form
         pw = generate_password_hash(f["password"])
