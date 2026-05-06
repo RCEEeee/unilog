@@ -30,11 +30,11 @@ def get_db():
 
     # This will now use the password provided by the environment
     return pymysql.connect(
-        host=db_host,
-        user=db_user,
-        password=db_pass, # Ensure this is getting a real string!
-        database=db_name,
-        port=db_port,
+        host='mysql.railway.internal',
+        user='root',
+        password='cWEpkkSyeNiuZhtfCINETdRilCrSLdXc',
+        database='railway',
+        port=3306,
         cursorclass=pymysql.cursors.DictCursor
     )
         
