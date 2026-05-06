@@ -8,6 +8,36 @@ Run:
 Set environment variables (or edit DEFAULT_CONFIG below):
     DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, SECRET_KEY
 """
+import bcrypt
+import pymysql
+
+# Update with your Railway DB credentials
+connection = pymysql.connect(
+    host="mysql.railway.internal",
+    user="root",
+    password="cWEpkkSyeNiuZhtfCINETdRilCrSLdXc",
+    database="railway"
+)
+
+try:
+    with connection.cursor() as cursor:
+        # Fetch all users
+        cursor.execute("SELECT id, password FROM user")
+        users = cursor.fetchall()
+
+        for user in users:
+            user_id, pwd = user
+
+            # Skip if already bcrypt hashed
+            if pwd and not pwd.startswith("$2b$"):
+                hashed = bcrypt.hashpw(pwd.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+                cursor.execute("UPDATE user SET password=%s WHERE id=%s", (hashed, user_id))
+                print(f"Updated user {user_id}")
+
+        connection.commit()
+finally:
+    connection.close()
+
 import pymysql
 pymysql.install_as_MySQLdb()
 
@@ -596,34 +626,5 @@ if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
 
-import bcrypt
-import pymysql
-
-# Update with your Railway DB credentials
-connection = pymysql.connect(
-    host="mysql.railway.internal",
-    user="root",
-    password="cWEpkkSyeNiuZhtfCINETdRilCrSLdXc",
-    database="railway"
-)
-
-try:
-    with connection.cursor() as cursor:
-        # Fetch all users
-        cursor.execute("SELECT id, password FROM user")
-        users = cursor.fetchall()
-
-        for user in users:
-            user_id, pwd = user
-
-            # Skip if already bcrypt hashed
-            if pwd and not pwd.startswith("$2b$"):
-                hashed = bcrypt.hashpw(pwd.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-                cursor.execute("UPDATE user SET password=%s WHERE id=%s", (hashed, user_id))
-                print(f"Updated user {user_id}")
-
-        connection.commit()
-finally:
-    connection.close()
 
 
