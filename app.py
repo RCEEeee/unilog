@@ -162,7 +162,7 @@ BASE = """
 
   {% if session.role == 'admin' %}
   <div class="sidebar-section">People</div>
-  <a href="{{ url_for('users') }}">👥 Users</a>
+  <a href="{{ url_for('users') }}"> Users</a>
   <a href="{{ url_for('students') }}"> Students</a>
   <a href="{{ url_for('lecturers') }}"> Lecturers</a>
   {% endif %}
@@ -239,7 +239,7 @@ def setup():
         try:
             conn, cur = db()
             cur.execute("""INSERT INTO user(user_name,full_name,cell,email,address,password, role)
-                           VALUES(%s,%s,%s,%s,%s,%s)""",
+                           VALUES(%s,%s,%s,%s,%s,%s,%s)""",
                         (f["user_name"], f["full_name"], f["cell"], f["email"], f["address"], pw, f.get("role","user")))
             conn.commit()
             cur.close()
@@ -466,7 +466,7 @@ def add_user():
         pw = generate_password_hash(f["password"])
         conn, cur = db()
         cur.execute("""INSERT INTO user(user_name,full_name,cell,email,address,password, role)
-                       VALUES(%s,%s,%s,%s,%s,%s)""",
+                       VALUES(%s,%s,%s,%s,%s,%s,%s)""",
                     (f["user_name"],f["full_name"],f["cell"],f["email"],f["address"],pw, f.get("role","user")))
         conn.commit()
         flash("User created successfully", "success")
